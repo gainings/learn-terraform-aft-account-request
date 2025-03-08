@@ -20,4 +20,5 @@ module "sandbox_aft_02" {
     change_requested_by = "chadain"
     change_reason       = "Test AFT 2"
   }
+  account_customizations_name = ""
 }
