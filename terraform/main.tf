@@ -122,3 +122,28 @@ module "sandbox_aft_06" {
   }
   account_customizations_name = ""
 }
+
+module "sandbox_aft_07" {
+  source = "./modules/aft-account-request"
+
+  control_tower_parameters = {
+    AccountEmail              = "gain.beats+sandbox_aft7@gmail.com"
+    AccountName               = "sandbox-aft-07"
+    ManagedOrganizationalUnit = "Sandbox"
+    SSOUserEmail              = "gain.beats+aft7@gmail.com"
+    SSOUserFirstName          = "NOT"
+    SSOUserLastName           = "USE"
+  }
+
+  account_tags = {
+    "Project"     = "test"
+    "Environment" = "Production"
+    "AFT"         = true
+  }
+
+  change_management_parameters = {
+    change_requested_by = "chadain"
+    change_reason       = "Test AFT 07"
+  }
+  account_customizations_name = ""
+}
