@@ -55,7 +55,7 @@ module "sandbox_aft_04" {
     AccountEmail              = "gain.beats+sandbox_aft4@gmail.com"
     AccountName               = "sandbox-aft-04"
     ManagedOrganizationalUnit = "Sandbox"
-    SSOUserEmail              = ""
+    SSOUserEmail              = "gain.beats+aft4@gmail.com"
     SSOUserFirstName          = "NOT"
     SSOUserLastName           = "USE"
   }
