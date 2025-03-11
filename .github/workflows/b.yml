@@ -28,9 +28,11 @@ jobs:
           git tag ${{ env.tag_name }}
           git push origin ${{ env.tag_name }}
 
-      - name: リリースを作成
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.tag_name }}
-          name: "Release ${{ env.tag_name }}"
-          body: "See RELEASE.md for details."
+      - name: GitHub リリースを作成
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ env.tag_name }} \
+            --title "Release ${{ env.tag_name }}" \
+            --generate-notes \
+            --target main
