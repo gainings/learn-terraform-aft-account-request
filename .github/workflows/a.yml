@@ -1,0 +1,53 @@
+name: Release on Merge
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  create-release-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 過去のタグ情報を取得するため
+
+      - name: 最新のタグを取得
+        id: get-latest-tag
+        run: |
+          LATEST_TAG=$(git tag --list --sort=-v:refname '20[0-9][0-9].[0-9][0-9].[0-9][0-9]*' | head -n 1)
+          echo "latest_tag=${LATEST_TAG}" >> $GITHUB_ENV
+
+      - name: 新しいタグを決定
+        id: determine-new-tag
+        run: |
+          TODAY=$(date -u +"%Y.%m.%d")
+          TAG_BASE="$TODAY"
+
+          # 既存の同じ日付のタグをカウント
+          COUNT=$(git tag --list "${TAG_BASE}*" | wc -l)
+          
+          if [ "$COUNT" -gt 0 ]; then
+            NEW_TAG="${TAG_BASE}-$COUNT"
+          else
+            NEW_TAG="${TAG_BASE}"
+          fi
+
+          echo "new_tag=${NEW_TAG}" >> $GITHUB_ENV
+          echo "New tag will be: ${NEW_TAG}"
+
+      - name: タグの作成
+        run: |
+          git tag ${{ env.new_tag }}
+          git push origin ${{ env.new_tag }}
+
+      - name: リリースを作成
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.new_tag }}
+          name: "Release ${{ env.new_tag }}"
+          body: "Changes since last release:\n\n$(git log ${{ env.latest_tag }}..HEAD --oneline)"
+          draft: false
+          prerelease: false
