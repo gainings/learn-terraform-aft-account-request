@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+  pull-requests: write  # PR 作成権限を明示的に設定
+
 jobs:
   create-release-pr:
     runs-on: ubuntu-latest
@@ -55,12 +59,13 @@ jobs:
           git commit -m "Prepare release ${{ env.new_tag }}"
           git push origin "$RELEASE_BRANCH"
 
-      - name: リリース PR を作成
-        uses: peter-evans/create-pull-request@v6
-        with:
-          branch: "release-${{ env.new_tag }}"
-          title: "Release ${{ env.new_tag }}"
-          body: |
-            This PR updates `versionfile` and prepares the release `${{ env.new_tag }}`.
-            Once merged, the actual release will be created automatically.
-          base: main
+      - name: GitHub Pull Request を作成
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base main \
+            --head "release-${{ env.new_tag }}" \
+            --title "Release ${{ env.new_tag }}" \
+            --body "This PR updates \`versionfile\` and prepares the release \`${{ env.new_tag }}\`.
+                    Once merged, the actual release will be created automatically."
