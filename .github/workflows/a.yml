@@ -106,11 +106,10 @@ jobs:
           if [ "${{ env.existing_pr_found }}" == "true" ]; then
             # PR が存在する場合は更新
             echo "既存の PR を更新しました。"
-            gh pr edit "release-${{ env.new_tag }}" --add-label "release"
-            gh pr comment "release-${{ env.new_tag }}" \
+            gh pr edit "release-${{ env.new_tag }}" \
               --body "### 🆕 Release \`${{ env.new_tag }}\`
             #### 🔄 Changes since last release:
-            ${{ env.commit_log }}"
+            $( echo ${{ env.commit_log }} | 's/%0A/\n/g')"
           else
             # 新しい PR を作成
             gh pr create \
@@ -120,7 +119,7 @@ jobs:
               --body "### 🆕 Release \`${{ env.new_tag }}\`
 
             #### 🔄 Changes since last release:
-            ${{ env.commit_log }}
+            $( echo ${{ env.commit_log }} | 's/%0A/\n/g')
 
             Once merged, the actual release will be created automatically. 🚀"
           fi
