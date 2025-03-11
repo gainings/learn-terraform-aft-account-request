@@ -39,33 +39,55 @@ jobs:
 
           echo "new_tag=${NEW_TAG}" >> $GITHUB_ENV
           echo "New tag will be: ${NEW_TAG}"
-
-      - name: リリース用ブランチを作成
+      - name: 更新差分を取得
+        id: get-diff
         run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          RELEASE_BRANCH="release-${{ env.new_tag }}"
-          git checkout -b "$RELEASE_BRANCH"
+          if [ -n "${{ env.latest_tag }}" ]; then
+            git log --pretty=format:"- %h %s" ${{ env.latest_tag }}..HEAD > changes.txt
+          else
+            git log --pretty=format:"- %h %s" HEAD > changes.txt
+          fi
 
-          # versionfile を更新
+          echo "commit_log=$(cat changes.txt | sed ':a;N;$!ba;s/\n/%0A/g')" >> $GITHUB_ENV
+
+      - name: リリース用ブランチの作成または更新
+        run: |
+          git fetch origin ${{ env.release_branch }} || true
+
+          if [ "${{ env.existing_pr_found }}" == "true" ]; then
+            echo "既存のリリース PR が見つかりました。更新します。"
+            git checkout ${{ env.release_branch }}
+            git merge --no-edit main
+          else
+            echo "新しいリリース PR を作成します。"
+            git checkout -b ${{ env.release_branch }}
+          fi
+
           echo "${{ env.new_tag }}" > versionfile
-
-          # RELEASE.md を更新
           echo "# Release ${{ env.new_tag }}" > RELEASE.md
           echo "## Changes since last release:" >> RELEASE.md
-          git log ${{ env.latest_tag }}..HEAD --oneline >> RELEASE.md
+          cat changes.txt >> RELEASE.md
 
           git add versionfile RELEASE.md
-          git commit -m "Prepare release ${{ env.new_tag }}"
-          git push origin "$RELEASE_BRANCH"
+          git commit -m "Prepare release ${{ env.new_tag }}" || true
+          git push -f origin ${{ env.release_branch }}
 
-      - name: GitHub Pull Request を作成
+      - name: GitHub Pull Request を作成または更新
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr create \
-            --base main \
-            --head "release-${{ env.new_tag }}" \
-            --title "Release ${{ env.new_tag }}" \
-            --body "This PR updates \`versionfile\` and prepares the release \`${{ env.new_tag }}\`.
-                    Once merged, the actual release will be created automatically."
+          if [ "${{ env.existing_pr_found }}" == "true" ]; then
+            echo "既存の PR を更新しました。"
+          else
+            echo "新しいリリース PR を作成します。"
+            gh pr create \
+              --base main \
+              --head "${{ env.release_branch }}" \
+              --title "Release ${{ env.new_tag }}" \
+              --body "### 🆕 Release \`${{ env.new_tag }}\`
+
+            #### 🔄 Changes since last release:
+            ${{ env.commit_log }}
+
+            Once merged, the actual release will be created automatically. 🚀"
+          fi
