@@ -38,6 +38,7 @@ jobs:
           TODAY=$(date -u +"%Y.%m.%d")
           BASE_TAG="$TODAY"
 
+          # 既存のPRが存在するか確認
           EXISTING_PR=$(gh pr list --state open --search "Release $BASE_TAG" --json headRefName --jq '.[0].headRefName' || true)
 
           if [ -n "$EXISTING_PR" ]; then
@@ -76,17 +77,22 @@ jobs:
           git fetch origin ${{ env.release_branch }} || true
 
           if [ "${{ env.existing_pr_found }}" == "true" ]; then
+            # 既存の PR を更新
             git checkout ${{ env.release_branch }}
             git merge --no-edit main
           else
+            # 新しい PR の場合
             git checkout -b ${{ env.release_branch }}
           fi
 
+          # versionfile の更新
           echo "${{ env.new_tag }}" > versionfile
-          echo "# Release ${{ env.new_tag }}" > RELEASE.md
-          echo "## Changes since last release:" >> RELEASE.md
+
+          # 変更内容を表示する
+          echo "## Changes since last release:" > RELEASE.md
           cat changes.txt >> RELEASE.md
 
+          # 更新内容をコミット
           git add versionfile RELEASE.md
           git commit -m "Prepare release ${{ env.new_tag }}" || true
           git push -f origin ${{ env.release_branch }}
@@ -96,8 +102,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ "${{ env.existing_pr_found }}" == "true" ]; then
+            # PR が存在する場合は更新
             echo "既存の PR を更新しました。"
+            gh pr edit "release-${{ env.new_tag }}" --add-label "release"
+            gh pr comment "release-${{ env.new_tag }}" --body "### 🆕 Release \`${{ env.new_tag }}\`
+#### 🔄 Changes since last release:
+${{ env.commit_log }}"
+
           else
+            # 新しい PR を作成
             gh pr create \
               --base main \
               --head "${{ env.release_branch }}" \
