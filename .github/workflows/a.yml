@@ -43,11 +43,15 @@ jobs:
           RELEASE_BRANCH="release-${{ env.new_tag }}"
           git checkout -b "$RELEASE_BRANCH"
 
+          # versionfile を更新
+          echo "${{ env.new_tag }}" > versionfile
+
+          # RELEASE.md を更新
           echo "# Release ${{ env.new_tag }}" > RELEASE.md
           echo "## Changes since last release:" >> RELEASE.md
           git log ${{ env.latest_tag }}..HEAD --oneline >> RELEASE.md
 
-          git add RELEASE.md
+          git add versionfile RELEASE.md
           git commit -m "Prepare release ${{ env.new_tag }}"
           git push origin "$RELEASE_BRANCH"
 
@@ -57,6 +61,6 @@ jobs:
           branch: "release-${{ env.new_tag }}"
           title: "Release ${{ env.new_tag }}"
           body: |
-            This PR prepares the release `${{ env.new_tag }}`.
+            This PR updates `versionfile` and prepares the release `${{ env.new_tag }}`.
             Once merged, the actual release will be created automatically.
           base: main
