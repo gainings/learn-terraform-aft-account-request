@@ -7,7 +7,7 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write  # PR 作成権限を明示的に設定
+  pull-requests: write
 
 jobs:
   create-release-pr:
@@ -16,7 +16,15 @@ jobs:
       - name: チェックアウト
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # すべてのタグを取得
+          fetch-depth: 0
+
+      - name: Git 設定
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      - name: GitHub CLI をセットアップ
+        run: gh --version
 
       - name: 最新のタグを取得
         id: get-latest-tag
@@ -24,21 +32,34 @@ jobs:
           LATEST_TAG=$(git tag --list --sort=-v:refname '20[0-9][0-9].[0-9][0-9].[0-9][0-9]*' | head -n 1)
           echo "latest_tag=${LATEST_TAG}" >> $GITHUB_ENV
 
-      - name: 新しいタグを決定
+      - name: 新しいタグを決定 (重複回避)
         id: determine-new-tag
         run: |
           TODAY=$(date -u +"%Y.%m.%d")
-          TAG_BASE="$TODAY"
+          BASE_TAG="$TODAY"
 
-          COUNT=$(git tag --list "${TAG_BASE}*" | wc -l)
-          if [ "$COUNT" -gt 0 ]; then
-            NEW_TAG="${TAG_BASE}-$COUNT"
+          EXISTING_PR=$(gh pr list --state open --search "Release $BASE_TAG" --json headRefName --jq '.[0].headRefName' || true)
+
+          if [ -n "$EXISTING_PR" ]; then
+            echo "release_branch=${EXISTING_PR}" >> $GITHUB_ENV
+            echo "existing_pr_found=true" >> $GITHUB_ENV
           else
-            NEW_TAG="${TAG_BASE}"
+            COUNT=1
+            while git rev-parse "$BASE_TAG-$COUNT" >/dev/null 2>&1; do
+              COUNT=$((COUNT + 1))
+            done
+
+            if git rev-parse "$BASE_TAG" >/dev/null 2>&1; then
+              NEW_TAG="$BASE_TAG-$COUNT"
+            else
+              NEW_TAG="$BASE_TAG"
+            fi
+
+            echo "release_branch=release-${NEW_TAG}" >> $GITHUB_ENV
+            echo "new_tag=${NEW_TAG}" >> $GITHUB_ENV
+            echo "existing_pr_found=false" >> $GITHUB_ENV
           fi
 
-          echo "new_tag=${NEW_TAG}" >> $GITHUB_ENV
-          echo "New tag will be: ${NEW_TAG}"
       - name: 更新差分を取得
         id: get-diff
         run: |
@@ -55,11 +76,9 @@ jobs:
           git fetch origin ${{ env.release_branch }} || true
 
           if [ "${{ env.existing_pr_found }}" == "true" ]; then
-            echo "既存のリリース PR が見つかりました。更新します。"
             git checkout ${{ env.release_branch }}
             git merge --no-edit main
           else
-            echo "新しいリリース PR を作成します。"
             git checkout -b ${{ env.release_branch }}
           fi
 
@@ -79,7 +98,6 @@ jobs:
           if [ "${{ env.existing_pr_found }}" == "true" ]; then
             echo "既存の PR を更新しました。"
           else
-            echo "新しいリリース PR を作成します。"
             gh pr create \
               --base main \
               --head "${{ env.release_branch }}" \
