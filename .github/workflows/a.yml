@@ -38,6 +38,8 @@ jobs:
 
       - name: リリース用ブランチを作成
         run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           RELEASE_BRANCH="release-${{ env.new_tag }}"
           git checkout -b "$RELEASE_BRANCH"
 
