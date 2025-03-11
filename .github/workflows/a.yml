@@ -70,6 +70,8 @@ jobs:
             git log --pretty=format:"- %h %s" HEAD > changes.txt
           fi
 
+          # 改行を修正
+          sed -i 's/%0A/\n/g' changes.txt
           echo "commit_log=$(cat changes.txt | sed ':a;N;$!ba;s/\n/%0A/g')" >> $GITHUB_ENV
 
       - name: リリース用ブランチの作成または更新
