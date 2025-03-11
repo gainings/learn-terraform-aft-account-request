@@ -1,0 +1,36 @@
+name: Create Release
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+jobs:
+  release:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.title, 'Release ')
+    runs-on: ubuntu-latest
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: PR タイトルからタグ名を取得
+        id: extract-tag
+        run: |
+          TAG_NAME=$(echo "${{ github.event.pull_request.title }}" | sed 's/Release //')
+          echo "tag_name=${TAG_NAME}" >> $GITHUB_ENV
+
+      - name: タグを作成
+        run: |
+          git tag ${{ env.tag_name }}
+          git push origin ${{ env.tag_name }}
+
+      - name: リリースを作成
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.tag_name }}
+          name: "Release ${{ env.tag_name }}"
+          body: "See RELEASE.md for details."
