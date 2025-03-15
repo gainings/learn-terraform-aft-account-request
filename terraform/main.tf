@@ -1,9 +1,9 @@
-module "sandbox_aft_09" {
+module "sandbox_aft_010" {
   source = "./modules/aft-account-request"
 
   control_tower_parameters = {
-    AccountEmail              = "gain.beats+sandbox_aft9@gmail.com"
-    AccountName               = "sandbox-aft-09"
+    AccountEmail              = "gain.beats+sandbox_aft10@gmail.com"
+    AccountName               = "sandbox-aft-010"
     ManagedOrganizationalUnit = "Sandbox"
     SSOUserEmail              = "gain.beats+aft@gmail.com"
     SSOUserFirstName          = "NOT"
@@ -18,7 +18,7 @@ module "sandbox_aft_09" {
 
   change_management_parameters = {
     change_requested_by = "chadain"
-    change_reason       = "Test AFT 9"
+    change_reason       = "Test AFT 10"
   }
   account_customizations_name = ""
 }
