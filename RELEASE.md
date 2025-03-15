@@ -1,4 +1,6 @@
 ## Changes since last release:
+- f9c7559 Merge pull request #23 from gainings/release-2025.03.15
+- 67fb8d6 Prepare release 2025.03.15
 - d4e28f7 10
 - eb16ab9 Merge pull request #21 from gainings/test5
 - 5b536ed escape
